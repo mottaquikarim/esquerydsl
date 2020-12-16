@@ -15,15 +15,16 @@ package main
 
 import (
 	"fmt"
+
 	"github.com/mottaquikarim/esquerydsl"
 )
 
 func main() {
-	_, body, _ := esquerydsl.GetQueryBlock(QueryDoc{
+	_, body, _ := esquerydsl.GetQueryBlock(esquerydsl.QueryDoc{
 		Index: "some_index",
 		Sort:  []map[string]string{map[string]string{"id": "asc"}},
-		And: []QueryItem{
-			QueryItem{
+		And: []esquerydsl.QueryItem{
+			esquerydsl.QueryItem{
 				Field: "some_index_id",
 				Value: "some-long-key-id-value",
 				Type:  "match",
