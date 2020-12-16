@@ -11,9 +11,10 @@ go get github.com/mottaquikarim/esquerydsl
 ## Usage
 
 ```go
-
 package main
+
 import (
+	"fmt"
 	"github.com/mottaquikarim/esquerydsl"
 )
 
@@ -32,6 +33,7 @@ func main() {
 	fmt.Println(body)
 	// {"query":{"bool":{"must":[{"match":{"some_index_id":"some-long-key-id-value"}}]}},"sort":[{"id":"asc"}]}
 }
+
 ```
 
 ## Contributing
