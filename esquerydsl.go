@@ -112,7 +112,7 @@ func getWrappedQuery(query QueryDoc) queryWrap {
 	if len(query.Or) > 0 {
 		boolDoc.OrList = updateList(query.Or)
 	}
-	if len(query.Or) > 0 {
+	if len(query.Filter) > 0 {
 		boolDoc.FilterList = updateList(query.Filter)
 	}
 	return queryWrap{Bool: boolDoc}
