@@ -1,0 +1,22 @@
+name: Build Status
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout master
+      uses: actions/checkout@v2
+
+    - name: Run unit tests
+      run: |
+        make clean test
+    - name: Fmt and Lint
+      run: |
+        make lint fmt
+    - name: Commit fmt changes
+      uses: stefanzweifel/git-auto-commit-action@v4
+      with:
+        commit_message: Apply fmt changes
