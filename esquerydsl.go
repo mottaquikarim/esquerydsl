@@ -9,6 +9,45 @@ import (
 	"strings"
 )
 
+type QueryType int
+
+const (
+	Match QueryType = iota
+	Term
+	Terms
+	Wildcard
+	Range
+	Exists
+	QueryString
+	Nested
+)
+
+type QueryTypeErr struct {
+	typeVal QueryType
+}
+
+func (e *QueryTypeErr) Error() string {
+	return fmt.Sprintf("Type %d is not supported", e.typeVal)
+}
+
+func (qt QueryType) String() (string, error) {
+	convs := [...]string{
+		"match",
+		"term",
+		"terms",
+		"wildcard",
+		"range",
+		"exists",
+		"query_string",
+		"nested",
+	}
+	if int(qt) > len(convs) {
+		return "", &QueryTypeErr{typeVal: qt}
+	}
+
+	return convs[qt], nil
+}
+
 type QueryDoc struct {
 	Index       string
 	Size        int
@@ -24,7 +63,7 @@ type QueryDoc struct {
 type QueryItem struct {
 	Field string
 	Value interface{}
-	Type  string
+	Type  QueryType
 }
 
 func WrapQueryItems(itemType string, items ...QueryItem) QueryItem {
@@ -41,7 +80,7 @@ func WrapQueryItems(itemType string, items ...QueryItem) QueryItem {
 	}
 
 	return QueryItem{
-		Type:  "nested",
+		Type:  Nested,
 		Value: queryDoc,
 	}
 }
@@ -78,22 +117,33 @@ type boolWrap struct {
 }
 
 type leafQuery struct {
-	Type  string
+	Type  QueryType
 	Name  string
 	Value interface{}
 }
 
-func (q leafQuery) handleMarshalType() ([]byte, error) {
+func (q leafQuery) handleMarshalType(queryType string) ([]byte, error) {
+	// lowercase wildcard queries
+	if q.Type == Wildcard {
+		if s, ok := q.Value.(string); ok {
+			q.Value = strings.ToLower(s)
+		}
+	}
+
+	if q.Type == QueryString {
+		return q.handleMarshalQueryString(queryType)
+	}
+
 	return json.Marshal(map[string]interface{}{
-		(q.Type): map[string]interface{}{
+		(queryType): map[string]interface{}{
 			(q.Name): q.Value,
 		},
 	})
 }
 
-func (q leafQuery) handleMarshalQueryString() ([]byte, error) {
+func (q leafQuery) handleMarshalQueryString(queryType string) ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
-		"query_string": map[string]interface{}{
+		queryType: map[string]interface{}{
 			"fields":           []string{q.Name},
 			"query":            q.Value,
 			"analyze_wildcard": true,
@@ -119,40 +169,15 @@ func getWrappedQuery(query QueryDoc) queryWrap {
 }
 
 func (q leafQuery) MarshalJSON() ([]byte, error) {
-	if q.Type == "nested" {
+	if q.Type == Nested {
 		return json.Marshal(getWrappedQuery(q.Value.(QueryDoc)))
 	}
-	// TODO: make this logic more strict
-	// that is to say, currently we rely
-	// on the leafQuery values are properly
-	// filled for the generated query to
-	// be syntactically correct
-	supportedTypes := map[string]bool{
-		"match":        true,
-		"term":         true,
-		"terms":        true,
-		"wildcard":     true,
-		"range":        true,
-		"exists":       true,
-		"query_string": true,
-	}
 
-	if _, ok := supportedTypes[q.Type]; !ok {
-		return []byte(""), fmt.Errorf("query.Type %s not supported", q.Type)
+	if queryType, err := q.Type.String(); err != nil {
+		return []byte(""), err
+	} else {
+		return q.handleMarshalType(queryType)
 	}
-
-	// lowercase wildcard queries
-	if q.Type == "wildcard" {
-		if s, ok := q.Value.(string); ok {
-			q.Value = strings.ToLower(s)
-		}
-	}
-
-	if q.Type == "query_string" {
-		return q.handleMarshalQueryString()
-	}
-
-	return q.handleMarshalType()
 }
 
 func updateList(queryItems []QueryItem) []leafQuery {
@@ -177,7 +202,7 @@ func GetQueryBlock(query QueryDoc) (string, string, error) {
 
 	requestBody, err := json.Marshal(queryReq)
 	if err != nil {
-		return "", "", nil
+		return "", "", err
 	}
 
 	return fmt.Sprintf(`{"index":"%s"}`, query.Index), string(requestBody), nil

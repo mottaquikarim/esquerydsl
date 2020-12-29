@@ -1,8 +1,28 @@
 package esquerydsl
 
 import (
+	"errors"
 	"testing"
 )
+
+func TestBogusQueryType(t *testing.T) {
+	_, _, err := GetQueryBlock(QueryDoc{
+		Index: "some_index",
+		Sort:  []map[string]string{map[string]string{"id": "asc"}},
+		And: []QueryItem{
+			QueryItem{
+				Field: "some_index_id",
+				Value: "some-long-key-id-value",
+				Type:  100001,
+			},
+		},
+	})
+
+	var queryTypeErr *QueryTypeErr
+	if !errors.As(err, &queryTypeErr) {
+		t.Errorf("\nUnexpected error: %v", err)
+	}
+}
 
 func TestAndQuery(t *testing.T) {
 	_, body, _ := GetQueryBlock(QueryDoc{
@@ -12,7 +32,7 @@ func TestAndQuery(t *testing.T) {
 			QueryItem{
 				Field: "some_index_id",
 				Value: "some-long-key-id-value",
-				Type:  "match",
+				Type:  Match,
 			},
 		},
 	})
@@ -30,26 +50,26 @@ func TestFilterQuery(t *testing.T) {
 			QueryItem{
 				Field: "title",
 				Value: "Search",
-				Type:  "match",
+				Type:  Match,
 			},
 			QueryItem{
 				Field: "content",
 				Value: "Elasticsearch",
-				Type:  "match",
+				Type:  Match,
 			},
 		},
 		Filter: []QueryItem{
 			QueryItem{
 				Field: "status",
 				Value: "published",
-				Type:  "term",
+				Type:  Term,
 			},
 			QueryItem{
 				Field: "publish_date",
 				Value: map[string]string{
 					"gte": "2015-01-01",
 				},
-				Type: "range",
+				Type: Range,
 			},
 		},
 	})
