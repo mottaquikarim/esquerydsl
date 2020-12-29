@@ -29,7 +29,7 @@ func main() {
 			esquerydsl.QueryItem{
 				Field: "some_index_id",
 				Value: "some-long-key-id-value",
-				Type:  "match",
+				Type:  esquerydsl.Match,
 			},
 		},
 	})
@@ -38,6 +38,8 @@ func main() {
 }
 
 ```
+
+(Please find additional examples in the unit tests)
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
