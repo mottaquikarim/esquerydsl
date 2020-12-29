@@ -10,7 +10,7 @@ go get github.com/mottaquikarim/esquerydsl
 
 ## Usage
 
-[playground](https://play.golang.org/p/tlSkQH1mUGy)
+[playground](https://play.golang.org/p/FdzhJZ8VkGa)
 
 ```go
 package main
