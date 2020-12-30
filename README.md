@@ -41,7 +41,7 @@ func main() {
 
 (Please find additional examples in the unit tests)
 
-## MultiSearch Support
+### MultiSearch Support
 
 ```go
 package main
@@ -53,24 +53,24 @@ import (
 )
 
 func main() {
-	doc, _ := MultiSearchDoc([]QueryDoc{
-		QueryDoc{
+	doc, _ := esquerydsl.MultiSearchDoc([]esquerydsl.QueryDoc{
+		esquerydsl.QueryDoc{
 			Index: "index1",
-			And: []QueryItem{
-				QueryItem{
+			And: []esquerydsl.QueryItem{
+				esquerydsl.QueryItem{
 					Field: "user.id",
 					Value: "kimchy!",
-					Type:  QueryString,
+					Type:  esquerydsl.QueryString,
 				},
 			},
 		},
-		QueryDoc{
+		esquerydsl.QueryDoc{
 			Index: "index2",
-			And: []QueryItem{
-				QueryItem{
+			And: []esquerydsl.QueryItem{
+				esquerydsl.QueryItem{
 					Field: "some_index_id",
 					Value: "some-long-key-id-value",
-					Type:  Match,
+					Type:  esquerydsl.Match,
 				},
 			},
 		},
@@ -85,7 +85,7 @@ func main() {
 
 	// ...
 	// eventually, pass this in like so:
-	
+
 	// request := esapi.MsearchRequest{
 	//	Body: strings.NewReader(doc),
 	// }
