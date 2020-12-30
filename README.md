@@ -16,6 +16,7 @@ go get github.com/mottaquikarim/esquerydsl
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/mottaquikarim/esquerydsl"
