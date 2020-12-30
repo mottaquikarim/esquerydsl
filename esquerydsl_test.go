@@ -43,6 +43,40 @@ func TestQueryStringEsc(t *testing.T) {
 	}
 }
 
+func TestMultiSearchDoc(t *testing.T) {
+	doc, _ := MultiSearchDoc([]QueryDoc{
+		QueryDoc{
+			Index: "index1",
+			And: []QueryItem{
+				QueryItem{
+					Field: "user.id",
+					Value: "kimchy!",
+					Type:  QueryString,
+				},
+			},
+		},
+		QueryDoc{
+			Index: "index2",
+			And: []QueryItem{
+				QueryItem{
+					Field: "some_index_id",
+					Value: "some-long-key-id-value",
+					Type:  Match,
+				},
+			},
+		},
+	})
+
+	expected := `{"index":"index1"}
+{"query":{"bool":{"must":[{"query_string":{"analyze_wildcard":true,"fields":["user.id"],"query":"kimchy\\!"}}]}}}
+{"index":"index2"}
+{"query":{"bool":{"must":[{"match":{"some_index_id":"some-long-key-id-value"}}]}}}
+`
+	if string(doc) != expected {
+		t.Errorf("\nWant: %q\nHave: %q", expected, string(doc))
+	}
+}
+
 func TestAndQuery(t *testing.T) {
 	body, _ := json.Marshal(QueryDoc{
 		Index: "some_index",

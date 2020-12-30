@@ -189,6 +189,8 @@ func updateList(queryItems []QueryItem) []leafQuery {
 	return leafQueries
 }
 
+// Custom marshal-er that will convert QueryDoc struct into
+// valid and spec compliant JSON representation
 func (query QueryDoc) MarshalJSON() ([]byte, error) {
 	queryReq := queryReqDoc{
 		Query:       getWrappedQuery(query),
@@ -203,6 +205,21 @@ func (query QueryDoc) MarshalJSON() ([]byte, error) {
 	}
 
 	return requestBody, nil
+}
+
+// Construct document format for multisearch functionality using Query DSL
+func MultiSearchDoc(queries []QueryDoc) (string, error) {
+	var requestBuilder strings.Builder
+	for _, query := range queries {
+		body, err := json.Marshal(query)
+		if err != nil {
+			return "", err
+		}
+		requestBuilder.WriteString(fmt.Sprintf(`{"index":"%s"}`, query.Index) + "\n")
+		requestBuilder.WriteString(string(body) + "\n")
+	}
+
+	return requestBuilder.String(), nil
 }
 
 // Elasticsearch defines a set of "reserved keywords" that MUST be escaped
