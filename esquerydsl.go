@@ -85,19 +85,16 @@ func WrapQueryItems(itemType string, items ...QueryItem) QueryItem {
 	}
 }
 
-/*
-   Builds a JSON string as follows:
-
-   {
-       "query": {
-           "bool": {
-               "must": [ ... ]
-               "should": [ ... ]
-               "filter": [ ... ]
-           }
-       }
-   }
-*/
+// Builds a JSON string as follows:
+// {
+//     "query": {
+//         "bool": {
+//             "must": [ ... ]
+//             "should": [ ... ]
+//             "filter": [ ... ]
+//         }
+//     }
+// }
 type queryReqDoc struct {
 	Query       queryWrap           `json:"query,omitempty"`
 	Size        int                 `json:"size,omitempty"`
@@ -145,8 +142,8 @@ func (q leafQuery) handleMarshalQueryString(queryType string) ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		queryType: map[string]interface{}{
 			"fields":           []string{q.Name},
-			"query":            q.Value,
-			"analyze_wildcard": true,
+			"query":            SanitizeElasticQueryField(q.Value.(string)),
+			"analyze_wildcard": true, // TODO: make this configurable
 		},
 	})
 }
@@ -192,7 +189,7 @@ func updateList(queryItems []QueryItem) []leafQuery {
 	return leafQueries
 }
 
-func GetQueryBlock(query QueryDoc) (string, string, error) {
+func (query QueryDoc) MarshalJSON() ([]byte, error) {
 	queryReq := queryReqDoc{
 		Query:       getWrappedQuery(query),
 		Size:        query.Size,
@@ -202,17 +199,16 @@ func GetQueryBlock(query QueryDoc) (string, string, error) {
 
 	requestBody, err := json.Marshal(queryReq)
 	if err != nil {
-		return "", "", err
+		return nil, err
 	}
 
-	return fmt.Sprintf(`{"index":"%s"}`, query.Index), string(requestBody), nil
+	return requestBody, nil
 }
 
 // Elasticsearch defines a set of "reserved keywords" that MUST be escaped
 // in order to be queryable. More info can be found in the docs:
 // BASE: https://www.elastic.co/guide/en/elasticsearch/reference/current ...
 // /query-dsl-query-string-query.html#_reserved_characters
-// This solution was implemented for BAK-3966
 var reserved = []string{"\\", "+", "=", "&&", "||", "!", "(", ")", "{", "}", "[", "]", "^", "\"", "~", "*", "?", ":", "/"}
 
 func SanitizeElasticQueryField(keyword string) string {

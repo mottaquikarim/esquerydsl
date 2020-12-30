@@ -1,12 +1,13 @@
 package esquerydsl
 
 import (
+	"encoding/json"
 	"errors"
 	"testing"
 )
 
 func TestBogusQueryType(t *testing.T) {
-	_, _, err := GetQueryBlock(QueryDoc{
+	_, err := json.Marshal(QueryDoc{
 		Index: "some_index",
 		Sort:  []map[string]string{map[string]string{"id": "asc"}},
 		And: []QueryItem{
@@ -24,8 +25,26 @@ func TestBogusQueryType(t *testing.T) {
 	}
 }
 
+func TestQueryStringEsc(t *testing.T) {
+	body, _ := json.Marshal(QueryDoc{
+		Index: "some_index",
+		And: []QueryItem{
+			QueryItem{
+				Field: "user.id",
+				Value: "kimchy!",
+				Type:  QueryString,
+			},
+		},
+	})
+
+	expected := `{"query":{"bool":{"must":[{"query_string":{"analyze_wildcard":true,"fields":["user.id"],"query":"kimchy\\!"}}]}}}`
+	if string(body) != expected {
+		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
+	}
+}
+
 func TestAndQuery(t *testing.T) {
-	_, body, _ := GetQueryBlock(QueryDoc{
+	body, _ := json.Marshal(QueryDoc{
 		Index: "some_index",
 		Sort:  []map[string]string{map[string]string{"id": "asc"}},
 		And: []QueryItem{
@@ -38,13 +57,13 @@ func TestAndQuery(t *testing.T) {
 	})
 
 	expected := `{"query":{"bool":{"must":[{"match":{"some_index_id":"some-long-key-id-value"}}]}},"sort":[{"id":"asc"}]}`
-	if body != expected {
-		t.Errorf("\nWant: %q\nHave: %q", expected, body)
+	if string(body) != expected {
+		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
 	}
 }
 
 func TestFilterQuery(t *testing.T) {
-	_, body, _ := GetQueryBlock(QueryDoc{
+	body, _ := json.Marshal(QueryDoc{
 		Index: "some_index",
 		And: []QueryItem{
 			QueryItem{
@@ -75,7 +94,7 @@ func TestFilterQuery(t *testing.T) {
 	})
 
 	expected := `{"query":{"bool":{"must":[{"match":{"title":"Search"}},{"match":{"content":"Elasticsearch"}}],"filter":[{"term":{"status":"published"}},{"range":{"publish_date":{"gte":"2015-01-01"}}}]}}}`
-	if body != expected {
-		t.Errorf("\nWant: %q\nHave: %q", expected, body)
+	if string(body) != expected {
+		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
 	}
 }

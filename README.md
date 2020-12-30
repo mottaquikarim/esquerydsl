@@ -10,7 +10,7 @@ go get github.com/mottaquikarim/esquerydsl
 
 ## Usage
 
-[playground](https://play.golang.org/p/FdzhJZ8VkGa)
+(You can copy paste the snippet below into [playground](https://play.golang.org/) and see for yourself)
 
 ```go
 package main
@@ -22,7 +22,7 @@ import (
 )
 
 func main() {
-	_, body, _ := esquerydsl.GetQueryBlock(esquerydsl.QueryDoc{
+	body, _ := json.Marshal(esquerydsl.QueryDoc{
 		Index: "some_index",
 		Sort:  []map[string]string{map[string]string{"id": "asc"}},
 		And: []esquerydsl.QueryItem{
@@ -33,7 +33,7 @@ func main() {
 			},
 		},
 	})
-	fmt.Println(body)
+	fmt.Println(string(body))
 	// {"query":{"bool":{"must":[{"match":{"some_index_id":"some-long-key-id-value"}}]}},"sort":[{"id":"asc"}]}
 }
 
