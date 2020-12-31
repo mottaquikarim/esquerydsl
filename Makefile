@@ -31,4 +31,4 @@ test:
 #   Usage:
 #       make lint
 lint:
-	docker run --rm -v ${ROOT}:/data cytopia/gofmt -s -w .
+	docker run --rm -v ${ROOT}:/data cytopia/golint .

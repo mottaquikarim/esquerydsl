@@ -1,6 +1,5 @@
 // Package esquerydsl exposes various structs and a json marshal-er that makes it easier
 // to safely create complex ES Search Queries via the Query DSL
-
 package esquerydsl
 
 import (
@@ -9,8 +8,12 @@ import (
 	"strings"
 )
 
+// QueryType is used to manage the various querydsl types supported by ES
+// We use this type as an enum, essentially to more safely handle the various
+// string tokens that denote various querying modes
 type QueryType int
 
+// These are the currently supported esquery types
 const (
 	Match QueryType = iota
 	Term
@@ -22,6 +25,8 @@ const (
 	Nested
 )
 
+// QueryTypeErr is a custom err returned if we are trying to stringify
+// an unsupported QueryType int
 type QueryTypeErr struct {
 	typeVal QueryType
 }
@@ -48,6 +53,9 @@ func (qt QueryType) String() (string, error) {
 	return convs[qt], nil
 }
 
+// QueryDoc is the main public struct that ought to be used to
+// construct our querydsl JSON bodies. This struct marshals into
+// a spec complaint ES querydsl JSON string
 type QueryDoc struct {
 	Index       string
 	Size        int
@@ -60,12 +68,17 @@ type QueryDoc struct {
 	PageSize    int
 }
 
+// QueryItem is used to construct the specific query type json bodies
+// for example if we want a "match" query, the Type attr should be "Match"
+// the Field attr should be the document attr we want to query against
+// and the Value attr should be the actual search term
 type QueryItem struct {
 	Field string
 	Value interface{}
 	Type  QueryType
 }
 
+// WrapQueryItems is to build nested queries
 func WrapQueryItems(itemType string, items ...QueryItem) QueryItem {
 	queryDoc := QueryDoc{}
 	switch strings.ToLower(itemType) {
@@ -142,7 +155,7 @@ func (q leafQuery) handleMarshalQueryString(queryType string) ([]byte, error) {
 	return json.Marshal(map[string]interface{}{
 		queryType: map[string]interface{}{
 			"fields":           []string{q.Name},
-			"query":            SanitizeElasticQueryField(q.Value.(string)),
+			"query":            sanitizeElasticQueryField(q.Value.(string)),
 			"analyze_wildcard": true, // TODO: make this configurable
 		},
 	})
@@ -170,11 +183,13 @@ func (q leafQuery) MarshalJSON() ([]byte, error) {
 		return json.Marshal(getWrappedQuery(q.Value.(QueryDoc)))
 	}
 
-	if queryType, err := q.Type.String(); err != nil {
+	var queryType string
+	var err error
+	if queryType, err = q.Type.String(); err != nil {
 		return []byte(""), err
-	} else {
-		return q.handleMarshalType(queryType)
 	}
+
+	return q.handleMarshalType(queryType)
 }
 
 func updateList(queryItems []QueryItem) []leafQuery {
@@ -189,7 +204,7 @@ func updateList(queryItems []QueryItem) []leafQuery {
 	return leafQueries
 }
 
-// Custom marshal-er that will convert QueryDoc struct into
+// MarshalJSON will convert QueryDoc struct into
 // valid and spec compliant JSON representation
 func (query QueryDoc) MarshalJSON() ([]byte, error) {
 	queryReq := queryReqDoc{
@@ -207,7 +222,7 @@ func (query QueryDoc) MarshalJSON() ([]byte, error) {
 	return requestBody, nil
 }
 
-// Construct document format for multisearch functionality using Query DSL
+// MultiSearchDoc constructs document format for multisearch functionality using Query DSL
 func MultiSearchDoc(queries []QueryDoc) (string, error) {
 	var requestBuilder strings.Builder
 	for _, query := range queries {
@@ -228,7 +243,7 @@ func MultiSearchDoc(queries []QueryDoc) (string, error) {
 // /query-dsl-query-string-query.html#_reserved_characters
 var reserved = []string{"\\", "+", "=", "&&", "||", "!", "(", ")", "{", "}", "[", "]", "^", "\"", "~", "*", "?", ":", "/"}
 
-func SanitizeElasticQueryField(keyword string) string {
+func sanitizeElasticQueryField(keyword string) string {
 	sanitizedKeyword := keyword
 	for _, char := range reserved {
 		if strings.Contains(sanitizedKeyword, char) {
