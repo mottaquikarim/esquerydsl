@@ -11,9 +11,9 @@ GOLANG_DOCKER_CONTAINER := goesquerydsl-container
 #       make fmt path=src/elastic/index_setup.go
 fmt:
 ifdef path
-	docker run --rm -v ${ROOT}:/data cytopia/gofmt -w ${path}
+	docker run --rm -v ${ROOT}:/data cytopia/gofmt -s -w ${path}
 else
-	docker run --rm -v ${ROOT}:/data cytopia/gofmt -w .
+	docker run --rm -v ${ROOT}:/data cytopia/gofmt -s -w .
 endif
 
 #   Deletes container if exists
@@ -31,4 +31,4 @@ test:
 #   Usage:
 #       make lint
 lint:
-	docker run --rm -v ${ROOT}:/app -w /app golangci/golangci-lint:v1.27.0 golangci-lint run -v
+	docker run --rm -v ${ROOT}:/data cytopia/gofmt -s -w .

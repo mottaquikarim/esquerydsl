@@ -9,9 +9,9 @@ import (
 func TestBogusQueryType(t *testing.T) {
 	_, err := json.Marshal(QueryDoc{
 		Index: "some_index",
-		Sort:  []map[string]string{map[string]string{"id": "asc"}},
+		Sort:  []map[string]string{{"id": "asc"}},
 		And: []QueryItem{
-			QueryItem{
+			{
 				Field: "some_index_id",
 				Value: "some-long-key-id-value",
 				Type:  100001,
@@ -29,7 +29,7 @@ func TestQueryStringEsc(t *testing.T) {
 	body, _ := json.Marshal(QueryDoc{
 		Index: "some_index",
 		And: []QueryItem{
-			QueryItem{
+			{
 				Field: "user.id",
 				Value: "kimchy!",
 				Type:  QueryString,
@@ -45,20 +45,20 @@ func TestQueryStringEsc(t *testing.T) {
 
 func TestMultiSearchDoc(t *testing.T) {
 	doc, _ := MultiSearchDoc([]QueryDoc{
-		QueryDoc{
+		{
 			Index: "index1",
 			And: []QueryItem{
-				QueryItem{
+				{
 					Field: "user.id",
 					Value: "kimchy!",
 					Type:  QueryString,
 				},
 			},
 		},
-		QueryDoc{
+		{
 			Index: "index2",
 			And: []QueryItem{
-				QueryItem{
+				{
 					Field: "some_index_id",
 					Value: "some-long-key-id-value",
 					Type:  Match,
@@ -80,9 +80,9 @@ func TestMultiSearchDoc(t *testing.T) {
 func TestAndQuery(t *testing.T) {
 	body, _ := json.Marshal(QueryDoc{
 		Index: "some_index",
-		Sort:  []map[string]string{map[string]string{"id": "asc"}},
+		Sort:  []map[string]string{{"id": "asc"}},
 		And: []QueryItem{
-			QueryItem{
+			{
 				Field: "some_index_id",
 				Value: "some-long-key-id-value",
 				Type:  Match,
@@ -100,24 +100,24 @@ func TestFilterQuery(t *testing.T) {
 	body, _ := json.Marshal(QueryDoc{
 		Index: "some_index",
 		And: []QueryItem{
-			QueryItem{
+			{
 				Field: "title",
 				Value: "Search",
 				Type:  Match,
 			},
-			QueryItem{
+			{
 				Field: "content",
 				Value: "Elasticsearch",
 				Type:  Match,
 			},
 		},
 		Filter: []QueryItem{
-			QueryItem{
+			{
 				Field: "status",
 				Value: "published",
 				Type:  Term,
 			},
-			QueryItem{
+			{
 				Field: "publish_date",
 				Value: map[string]string{
 					"gte": "2015-01-01",
