@@ -12,7 +12,9 @@ jobs:
 
     - name: Run unit tests
       run: |
-        make clean test
+        make clean test-ci
+      env:
+        CC_TEST_REPORTER_ID: ${{ secrets.CC_TEST_REPORTER_ID }}
     - name: Fmt and Lint
       run: |
         make lint fmt
