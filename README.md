@@ -1,4 +1,4 @@
-![build](https://github.com/mottaquikarim/esquerydsl/workflows/Build%20Status/badge.svg) [![GoDoc](https://godoc.org/github.com/mottaquikarim/esquerydsl?status.svg)](https://godoc.org/github.com/mottaquikarim/esquerydsl)
+![build](https://github.com/mottaquikarim/esquerydsl/workflows/Build%20Status/badge.svg) [![GoDoc](https://godoc.org/github.com/mottaquikarim/esquerydsl?status.svg)](https://godoc.org/github.com/mottaquikarim/esquerydsl) [![Go Report Card](https://goreportcard.com/badge/github.com/mottaquikarim/esquerydsl)](https://goreportcard.com/report/github.com/mottaquikarim/esquerydsl)
 # [ES Query DSL](https://godoc.org/github.com/mottaquikarim/esquerydsl)
 Structs and marshal-ers that help wrangle writing elastic search queries using the [ES query DSL](https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl.html) spec
 
