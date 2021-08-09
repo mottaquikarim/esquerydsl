@@ -59,6 +59,7 @@ func (qt QueryType) String() (string, error) {
 type QueryDoc struct {
 	Index       string
 	Size        int
+	From        int
 	Sort        []map[string]string
 	SearchAfter []string
 	And         []QueryItem
@@ -111,6 +112,7 @@ func WrapQueryItems(itemType string, items ...QueryItem) QueryItem {
 type queryReqDoc struct {
 	Query       queryWrap           `json:"query,omitempty"`
 	Size        int                 `json:"size,omitempty"`
+	From        int                 `json:"from,omitempty"`
 	Sort        []map[string]string `json:"sort,omitempty"`
 	SearchAfter []string            `json:"search_after,omitempty"`
 }
@@ -210,6 +212,7 @@ func (query QueryDoc) MarshalJSON() ([]byte, error) {
 	queryReq := queryReqDoc{
 		Query:       getWrappedQuery(query),
 		Size:        query.Size,
+		From:        query.From,
 		Sort:        query.Sort,
 		SearchAfter: query.SearchAfter,
 	}
