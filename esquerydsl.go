@@ -154,13 +154,17 @@ func (q leafQuery) handleMarshalType(queryType string) ([]byte, error) {
 }
 
 func (q leafQuery) handleMarshalQueryString(queryType string) ([]byte, error) {
-	return json.Marshal(map[string]interface{}{
-		queryType: map[string]interface{}{
-			"fields":           []string{q.Name},
-			"query":            sanitizeElasticQueryField(q.Value.(string)),
-			"analyze_wildcard": true, // TODO: make this configurable
-		},
+	queryBody := map[string]interface{}{
+		"query":            sanitizeElasticQueryField(q.Value.(string)),
+		"analyze_wildcard": true, // TODO: make this configurable
+	}
+	if q.Name != "" {
+		queryBody["fields"] = []string{q.Name}
+	}
+	query, err := json.Marshal(map[string]interface{}{
+		queryType: queryBody,
 	})
+	return query, err
 }
 
 func getWrappedQuery(query QueryDoc) queryWrap {
