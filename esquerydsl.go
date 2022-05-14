@@ -23,6 +23,7 @@ const (
 	Exists
 	QueryString
 	Nested
+	NestedQuery
 )
 
 // QueryTypeErr is a custom err returned if we are trying to stringify
@@ -45,6 +46,7 @@ func (qt QueryType) String() (string, error) {
 		"exists",
 		"query_string",
 		"nested",
+		"nested_query",
 	}
 	if int(qt) > len(convs) {
 		return "", &QueryTypeErr{typeVal: qt}
@@ -67,6 +69,49 @@ type QueryDoc struct {
 	Or          []QueryItem
 	Filter      []QueryItem
 	PageSize    int
+}
+
+var _ query = (*QueryDoc)(nil)
+
+func (query QueryDoc) andList() []QueryItem {
+	return query.And
+}
+
+func (query QueryDoc) notList() []QueryItem {
+	return query.Not
+}
+
+func (query QueryDoc) orList() []QueryItem {
+	return query.Or
+}
+
+func (query QueryDoc) filterList() []QueryItem {
+	return query.Filter
+}
+
+type NestedQueryItem struct {
+	And    []QueryItem
+	Not    []QueryItem
+	Or     []QueryItem
+	Filter []QueryItem
+}
+
+var _ query = (*NestedQueryItem)(nil)
+
+func (n NestedQueryItem) andList() []QueryItem {
+	return n.And
+}
+
+func (n NestedQueryItem) notList() []QueryItem {
+	return n.Not
+}
+
+func (n NestedQueryItem) orList() []QueryItem {
+	return n.Or
+}
+
+func (n NestedQueryItem) filterList() []QueryItem {
+	return n.Filter
 }
 
 // QueryItem is used to construct the specific query type json bodies
@@ -146,6 +191,10 @@ func (q leafQuery) handleMarshalType(queryType string) ([]byte, error) {
 		return q.handleMarshalQueryString(queryType)
 	}
 
+	if q.Type == NestedQuery {
+		return q.handleMarshalNestedQuery()
+	}
+
 	return json.Marshal(map[string]interface{}{
 		(queryType): map[string]interface{}{
 			(q.Name): q.Value,
@@ -163,19 +212,40 @@ func (q leafQuery) handleMarshalQueryString(queryType string) ([]byte, error) {
 	})
 }
 
-func getWrappedQuery(query QueryDoc) queryWrap {
+func (q leafQuery) handleMarshalNestedQuery() ([]byte, error) {
+	item, ok := q.Value.(NestedQueryItem)
+	if !ok {
+		return nil, &QueryTypeErr{typeVal: NestedQuery}
+	}
+
+	return json.Marshal(map[string]interface{}{
+		"nested": map[string]interface{}{
+			"path":  []string{q.Name},
+			"query": getWrappedQuery(item),
+		},
+	})
+}
+
+type query interface {
+	andList() []QueryItem
+	notList() []QueryItem
+	orList() []QueryItem
+	filterList() []QueryItem
+}
+
+func getWrappedQuery(query query) queryWrap {
 	boolDoc := boolWrap{}
-	if len(query.And) > 0 {
-		boolDoc.AndList = updateList(query.And)
+	if and := query.andList(); len(and) > 0 {
+		boolDoc.AndList = updateList(and)
 	}
-	if len(query.Not) > 0 {
-		boolDoc.NotList = updateList(query.Not)
+	if not := query.notList(); len(not) > 0 {
+		boolDoc.NotList = updateList(not)
 	}
-	if len(query.Or) > 0 {
-		boolDoc.OrList = updateList(query.Or)
+	if or := query.orList(); len(or) > 0 {
+		boolDoc.OrList = updateList(or)
 	}
-	if len(query.Filter) > 0 {
-		boolDoc.FilterList = updateList(query.Filter)
+	if filter := query.filterList(); len(filter) > 0 {
+		boolDoc.FilterList = updateList(filter)
 	}
 	return queryWrap{Bool: boolDoc}
 }
