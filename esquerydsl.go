@@ -63,7 +63,7 @@ type QueryDoc struct {
 	Size        int
 	From        int
 	Sort        []map[string]string
-	SearchAfter []string
+	SearchAfter []interface{}
 	And         []QueryItem
 	Not         []QueryItem
 	Or          []QueryItem
@@ -159,7 +159,7 @@ type queryReqDoc struct {
 	Size        int                 `json:"size,omitempty"`
 	From        int                 `json:"from,omitempty"`
 	Sort        []map[string]string `json:"sort,omitempty"`
-	SearchAfter []string            `json:"search_after,omitempty"`
+	SearchAfter []interface{}       `json:"search_after,omitempty"`
 }
 
 type queryWrap struct {
