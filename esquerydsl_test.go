@@ -132,3 +132,27 @@ func TestFilterQuery(t *testing.T) {
 		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
 	}
 }
+
+func TestNestedQuery(t *testing.T) {
+	body, _ := json.Marshal(QueryDoc{
+		Index: "some_index",
+		And: []QueryItem{
+			{
+				Field: "nested_path",
+				Value: NestedQueryItem{
+					Filter: []QueryItem{WrapQueryItems("filter", QueryItem{
+						Field: "id",
+						Value: []string{"b4ab2c6e-93e3-40b9-8e66-9379f864186f"},
+						Type:  Terms,
+					})},
+				},
+				Type: NestedQuery,
+			},
+		},
+	})
+
+	expected := `{"query":{"bool":{"must":[{"nested":{"path":["nested_path"],"query":{"bool":{"filter":[{"bool":{"filter":[{"terms":{"id":["b4ab2c6e-93e3-40b9-8e66-9379f864186f"]}}]}}]}}}}]}}}`
+	if string(body) != expected {
+		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
+	}
+}
