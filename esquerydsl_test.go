@@ -96,6 +96,49 @@ func TestAndQuery(t *testing.T) {
 	}
 }
 
+func TestNotQuery(t *testing.T) {
+	body, _ := json.Marshal(QueryDoc{
+		Index: "some_index",
+		Sort:  []map[string]string{{"id": "desc"}},
+		Not: []QueryItem{
+			{
+				Field: "some_index_id",
+				Value: "some-not-value",
+				Type:  Match,
+			},
+		},
+	})
+
+	expected := `{"query":{"bool":{"must_not":[{"match":{"some_index_id":"some-not-value"}}]}},"sort":[{"id":"desc"}]}`
+	if string(body) != expected {
+		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
+	}
+}
+
+func TestOrQuery(t *testing.T) {
+	body, _ := json.Marshal(QueryDoc{
+		Index: "some_index",
+		Sort:  []map[string]string{{"id": "desc"}},
+		Or: []QueryItem{
+			{
+				Field: "some_index_id",
+				Value: "some-option-one",
+				Type:  Match,
+			},
+			{
+				Field: "some_index_id",
+				Value: "some-option-two",
+				Type:  Match,
+			},
+		},
+	})
+
+	expected := `{"query":{"bool":{"should":[{"match":{"some_index_id":"some-option-one"}},{"match":{"some_index_id":"some-option-two"}}]}},"sort":[{"id":"desc"}]}`
+	if string(body) != expected {
+		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
+	}
+}
+
 func TestFilterQuery(t *testing.T) {
 	body, _ := json.Marshal(QueryDoc{
 		Index: "some_index",
