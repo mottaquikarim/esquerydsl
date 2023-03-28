@@ -156,3 +156,66 @@ func TestNestedQuery(t *testing.T) {
 		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
 	}
 }
+
+func TestHasChildQuery(t *testing.T) {
+	body, err := json.Marshal(QueryDoc{
+		Index: "some_index",
+		And: []QueryItem{
+			{
+				Value: HasChildQueryItem{
+					Query: WrapQueryItems("and",
+						QueryItem{
+							Field: "Field1",
+							Value: "some-text",
+							Type:  Match,
+						},
+						WrapQueryItems("or",
+							QueryItem{
+								Field: "Field2",
+								Value: "some-text-2",
+								Type:  Match,
+							},
+							QueryItem{
+								Field: "Field3",
+								Value: "some-text-3",
+								Type:  Match,
+							},
+						),
+					),
+					Type: "childType",
+				},
+				Type: HasChild,
+			},
+		},
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %s", err.Error())
+	}
+
+	expected := `{"query":{"bool":{"must":[{"has_child":{"query":{"bool":{"must":[{"match":{"Field1":"some-text"}},{"bool":{"should":[{"match":{"Field2":"some-text-2"}},{"match":{"Field3":"some-text-3"}}]}}]}},"type":"childType"}}]}}}`
+	if string(body) != expected {
+		t.Errorf("\nWant: %q\nHave: %q", expected, string(body))
+	}
+}
+
+func TestHasChildQueryInvalid(t *testing.T) {
+	_, err := json.Marshal(QueryDoc{
+		Index: "some_index",
+		And: []QueryItem{
+			{
+				Value: QueryItem{
+					Field: "Field1",
+					Value: "some-text",
+					Type:  Match,
+				},
+				Type: HasChild,
+			},
+		},
+	})
+
+	var queryTypeErr *QueryTypeErr
+	if !errors.As(err, &queryTypeErr) {
+		t.Errorf("\nUnexpected error: %v", err)
+	}
+}
