@@ -4,6 +4,7 @@ package esquerydsl
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -24,6 +25,7 @@ const (
 	QueryString
 	Nested
 	NestedQuery
+	HasChild
 )
 
 // QueryTypeErr is a custom err returned if we are trying to stringify
@@ -47,6 +49,7 @@ func (qt QueryType) String() (string, error) {
 		"query_string",
 		"nested",
 		"nested_query",
+		"has_child",
 	}
 	if int(qt) > len(convs) {
 		return "", &QueryTypeErr{typeVal: qt}
@@ -114,6 +117,14 @@ func (n NestedQueryItem) filterList() []QueryItem {
 	return n.Filter
 }
 
+// HasChildQueryItem is used to construct a has_child query.
+// The Query attr specifies the query that applies to the child documents
+// and the Type attr must be the type name of the child documents
+type HasChildQueryItem struct {
+	Query QueryItem
+	Type  string
+}
+
 // QueryItem is used to construct the specific query type json bodies
 // for example if we want a "match" query, the Type attr should be "Match"
 // the Field attr should be the document attr we want to query against
@@ -145,15 +156,16 @@ func WrapQueryItems(itemType string, items ...QueryItem) QueryItem {
 }
 
 // Builds a JSON string as follows:
-// {
-//     "query": {
-//         "bool": {
-//             "must": [ ... ]
-//             "should": [ ... ]
-//             "filter": [ ... ]
-//         }
-//     }
-// }
+//
+//	{
+//	    "query": {
+//	        "bool": {
+//	            "must": [ ... ]
+//	            "should": [ ... ]
+//	            "filter": [ ... ]
+//	        }
+//	    }
+//	}
 type queryReqDoc struct {
 	Query       queryWrap           `json:"query,omitempty"`
 	Size        int                 `json:"size,omitempty"`
@@ -195,6 +207,10 @@ func (q leafQuery) handleMarshalType(queryType string) ([]byte, error) {
 		return q.handleMarshalNestedQuery()
 	}
 
+	if q.Type == HasChild {
+		return q.handleHasChild()
+	}
+
 	return json.Marshal(map[string]interface{}{
 		(queryType): map[string]interface{}{
 			(q.Name): q.Value,
@@ -222,6 +238,26 @@ func (q leafQuery) handleMarshalNestedQuery() ([]byte, error) {
 		"nested": map[string]interface{}{
 			"path":  []string{q.Name},
 			"query": getWrappedQuery(item),
+		},
+	})
+}
+
+func (q leafQuery) handleHasChild() ([]byte, error) {
+	item, ok := q.Value.(HasChildQueryItem)
+	if !ok {
+		return nil, &QueryTypeErr{typeVal: HasChild}
+	}
+
+	doc, ok := item.Query.Value.(QueryDoc)
+	if !ok {
+		return nil, errors.New(fmt.Sprintf("invalid value for HasChild query: %v", item.Query.Value))
+	}
+	wrapped := getWrappedQuery(doc)
+
+	return json.Marshal(map[string]interface{}{
+		"has_child": map[string]interface{}{
+			"query": wrapped,
+			"type":  item.Type,
 		},
 	})
 }
